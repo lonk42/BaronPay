@@ -1,0 +1,131 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BaronPay</title>
+    <link href="{% static 'kiosk/bootstrap.min.css' %}" rel="stylesheet">
+    <script src="{% static 'kiosk/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'kiosk/jquery-3.6.0.min.js' %}"></script>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #f5f5f5;
+        }
+        .product-card {
+            cursor: pointer;
+            text-align: center;
+            background: #282828;
+            color: #ffffff;
+            border: 3px solid #ffea0e;
+            border-radius: 8px;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .product-card:hover {
+            transform: scale(1.05);
+            background: #383838;
+        }
+        .product-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        .cart-container {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100vh;
+            background: #282828;
+            color: #ffffff;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .list-group-item {
+            background: #444;
+            color: #ffffff;
+            border: 1px solid #555;
+        }
+        .btn-primary {
+            background: #ffea0e;
+            border: none;
+            color: #000;
+        }
+        .btn-primary:hover {
+            background: #e6d60d;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Products -->
+    <div class="container py-4">
+        <h2 class="text-center mb-4">BaronPay</h2>
+        <div class="row" id="product-list">
+            {% for product in product_list %}
+            <div class="col-md-4 mb-3">
+                <div class="card product-card p-3" data-product-id="{{ product.id }}">
+                    {% with 'kiosk/'|add:product.thumbnail_file as product_thumbnail_path %}
+                    <img src="{% static product_thumbnail_path %}">
+                    {% endwith %}
+                    <h5>{{ product.name }}</h5>
+                    <p>${{ product.price }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Cart -->>
+    <div class="cart-container">
+        <h4>Cart Summary</h4>
+        <ul class="list-group mb-3" id="cart-list">
+            <!-- Cart items will appear here -->
+        </ul>
+        <h5>Total: $<span id="total-price">0.00</span></h5>
+        <button class="btn btn-primary w-100" id="checkout-btn">Checkout</button>
+    </div>
+
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== "") {
+                const cookies = document.cookie.split(";");
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + "=")) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        $(document).ready(function() {
+            $("#product-list").on("click", ".product-card", function() {
+                $.ajax({
+                    url: "add_to_cart",
+                    type: "POST",
+                    dataType: "json",
+                    data: JSON.stringify({product_id: $(this).data("product-id")}),
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                        "X-CSRFToken": getCookie("csrftoken"),
+                    },
+                    success: (data) => {
+                        console.log(data);
+                    },
+                    error: (error) => {
+                        console.log(error);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

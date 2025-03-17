@@ -1,0 +1,4 @@
+.venv
+***__pycache__
+webapp/*/migrations
+webapp/*.sqlite3
