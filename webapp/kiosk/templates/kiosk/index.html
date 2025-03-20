@@ -56,14 +56,21 @@
             color: #ffffff;
             border: 1px solid #555;
         }
-        .btn-primary {
-            background: #ffea0e;
+        .finish-button {
             border: none;
-            color: #000;
-            font-size: 48px;
+            font-size: 42px;
             padding: 20px;
         }
-        .btn-primary:hover {
+        .scan-button {
+            background: #828282;
+            color: #fff;
+        }
+        .checkout-button {
+            background: #ffea0e;
+            font-size: 48px;
+            color: #000;
+        }
+        .checkout-button:hover {
             background: #e6d60d;
         }
         .btn-danger {
@@ -85,9 +92,16 @@
             border-radius: 8px;
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
         }
+        .hidden-input {
+            position: absolute;
+            left: -9999px;
+        }
     </style>
 </head>
 <body>
+    <!-- Hidden text input -->
+    <input type="text" id="hidden-input" class="hidden-input" autocomplete="off">
+
     <!-- Resuable notification popup -->
     <div id="checkout-notification" class="notification"></div>
 
@@ -117,7 +131,7 @@
         </ul>
         <h5>Total: $<span id="total-price">0.00</span></h5>
         <div class="checkout-container">
-            <button class="btn btn-primary w-100" id="checkout-btn">Checkout</button>
+            <button class="btn finish-button scan-button w-100" id="finish-btn">Scan Card</button>
         </div>
         <div class="cart-buttons">
             <button class="btn btn-danger w-100" id="cancel-btn">Cancel</button>
@@ -127,7 +141,7 @@
     <script>
         // Create an empty cart
         function createEmptyCart() {
-            return{'id': -1, 'cart_items': [], 'total_price': "0.00"}
+            return{'id': -1, 'cart_items': [], 'total_price': "0.00", 'card_number': ''}
         }
 
         // Reusable function for getting out CSRF
@@ -147,16 +161,29 @@
             return cookieValue;
         }
 
-        // Re-render the checkout with out cart items 
+        // Re-render the cart and checkout information
         function updateCart(current_cart) {
             let cart_list = "";
-
             console.log(current_cart)
+
+            // Make Checkout button interactable or not
+            if (current_cart.card_number === "") {
+                $("#finish-btn").removeClass("checkout-button")
+                $("#finish-btn").addClass("finish-button")
+                $("#finish-btn").html("Scan Card")
+            } else {
+                $("#finish-btn").addClass("checkout-button")
+                $("#finish-btn").removeClass("finish-button")
+                $("#finish-btn").html("Checkout")
+            }
+
+            // Show items in the cart
             current_cart.cart_items.forEach(item => {
                 cart_list += `<li class="list-group-item">${item.name} - $${item.price}</li>`;
             });
-            
             $("#cart-list").html(cart_list);
+            
+            // Update total price
             $("#total-price").text(current_cart.total_price);
         }
         
@@ -178,7 +205,6 @@
                     headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": getCookie("csrftoken") },
                     data: JSON.stringify({ 'cart_id': current_cart.id, 'product_id': $(this).data("product-id") }),
                     success: (data) => {
-                        console.log("App replied with:" + data);
                         current_cart = data;
                         updateCart(current_cart)
                     },
@@ -190,15 +216,87 @@
 
             // Discard the cart
             $("#cancel-btn").click(function() {
+                
+                // Send the complete call
+                $.ajax({
+                    url: "finish_cart",
+                    type: "POST",
+                    dataType: "json",
+                    headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": getCookie("csrftoken") },
+                    data: JSON.stringify({ 'cart_id': current_cart.id, 'completion_status': 'canceled' }),
+                    success: (data) => {
+                        return_status = data;
+                        showNotification("Canceled");
+                    },
+                    error: (error) => {
+                        console.log(error);
+                    }
+                });
+
                 current_cart = createEmptyCart();
                 updateCart(current_cart);
             });
 
             // Finish the checkout
-            $("#checkout-btn").click(function() {
-                showNotification("Checkout Successful!");
+            $("#finish-btn").click(function() {
+
+                // This button only works if a card has been scanned
+                if (! $(this).hasClass("checkout-button")) {return;}
+
+                // Send the complete call
+                $.ajax({
+                    url: "finish_cart",
+                    type: "POST",
+                    dataType: "json",
+                    headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": getCookie("csrftoken") },
+                    data: JSON.stringify({ 'cart_id': current_cart.id, 'completion_status': 'complete' }),
+                    success: (data) => {
+                        return_status = data;
+                        showNotification("Checkout Successful!");
+                    },
+                    error: (error) => {
+                        console.log(error);
+                    }
+                });
+                
                 current_cart = createEmptyCart();
                 updateCart(current_cart);
+            });
+
+            // Cosntantly refocus the hidden text input for scanning cards
+            let inputTimer;
+            function focusHiddenInput() {
+                $("#hidden-input").focus();
+            }
+            setInterval(focusHiddenInput, 500);
+            focusHiddenInput();
+
+            // Set the cart's card number if we get 10 or 14 digits
+            $("#hidden-input").on("input", function() {
+                clearTimeout(inputTimer);
+                inputTimer = setTimeout(() => {
+                    let inputValue = $(this).val();
+                    if (inputValue.length === 10 || inputValue.length === 14) {
+                
+                        // Let the API know we got a valid card number
+                        $.ajax({
+                            url: "card_scanned",
+                            type: "POST",
+                            dataType: "json",
+                            headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": getCookie("csrftoken") },
+                            data: JSON.stringify({ 'cart_id': current_cart.id, 'card_number': inputValue }),
+                            success: (data) => {
+                                current_cart = data;
+                                updateCart(current_cart)
+                            },
+                            error: (error) => {
+                                console.log(error);
+                            }
+                        });
+
+                    }
+                    $(this).val(""); // Clear the input field after logging
+                }, 200);
             });
         });
     </script>

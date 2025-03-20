@@ -8,21 +8,23 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
-class User(models.Model):
-    card_id = models.CharField(max_length=12)
-    name = models.CharField(max_length=64)
-    date_created = models.DateTimeField("date created", auto_now_add=True, blank=True)
+class Card(models.Model):
+    card_number = models.CharField(max_length=12)
+    alias = models.CharField(max_length=64, default='')
+    datetime_created = models.DateTimeField("date created", auto_now_add=True, blank=True)
+    last_scanned = models.DateTimeField("date completed", blank=True, null=True)
 
     def __str__(self):
-        return self.name
+        return ("id: %s, card_number: %s, datetime_created: %s, last_scanned: %s") % (self.id, self.card_number, self.datetime_created, self.last_scanned)
 
 class Cart(models.Model):
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+    card_id = models.ForeignKey(Card, on_delete=models.CASCADE, blank=True, null=True)
     datetime_created = models.DateTimeField("date created", auto_now_add=True, blank=True)
     datetime_completed = models.DateTimeField("date completed", blank=True, null=True)
+    completion_status = models.CharField(max_length=64, default='')
 
     def __str__(self):
-        return ("id: %s, user_id: %s, datetime_created: %s, datetime_completed: %s") % (self.id, self.user_id, self.datetime_created, self.datetime_completed)
+        return ("id: %s, card_id: %s, datetime_created: %s, datetime_completed: %s, completion_status: %s") % (self.id, self.card_id.id, self.datetime_created, self.datetime_completed, self.completion_status)
 
 class CartItem(models.Model):
     cart_id = models.ForeignKey(Cart, on_delete=models.CASCADE)
