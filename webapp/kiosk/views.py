@@ -29,12 +29,26 @@ def add_to_cart(request):
 
         return JsonResponse(get_cart_content(cart.id))
 
+def remove_from_cart(request):
+
+    if request.method == 'POST':
+        request_data = json.load(request)
+
+        # Technically its impossible to have an item to remove without a cart id already set
+        cart = Cart.objects.get(pk=request_data['cart_id'])
+
+        # Set the item to 'removed'
+        cart_item = CartItem.objects.filter(id=request_data['cart_item_id']).first()
+        cart_item.removed = True
+        cart_item.save()
+
+        return JsonResponse(get_cart_content(cart.id))
 
 def get_cart_content(cart_id):
 
     # Get the cart in question along with the card number and all items in it
     cart = Cart.objects.get(pk=cart_id)
-    cart_items = list(CartItem.objects.filter(cart_id=cart))
+    cart_items = list(CartItem.objects.filter(cart_id=cart, removed=False))
     if cart.card_id is None:
         card_number = ''
     else:
@@ -43,7 +57,7 @@ def get_cart_content(cart_id):
     # Send back a web consumable objects
     return {
         'id': cart.id,
-        'cart_items': [{'name': cart_item.product_id.name,'price': cart_item.product_id.price} for cart_item in cart_items],
+        'cart_items': [{'id': cart_item.id, 'name': cart_item.product_id.name,'price': cart_item.product_id.price} for cart_item in cart_items],
         'total_price': sum([cart_item.product_id.price for cart_item in cart_items]),
         'card_number': card_number
     }

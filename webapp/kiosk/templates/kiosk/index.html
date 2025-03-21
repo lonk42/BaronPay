@@ -13,6 +13,15 @@
             background-color: #1a1a1a;
             color: #f5f5f5;
         }
+        .main-content {
+            margin-right: 500px;
+            display: flex;
+            justify-content: center;
+        }
+        .product-list {
+            max-width: 1300px; /* Limit width to keep products centered */
+            width: 100%;
+        }
         .product-card {
             cursor: pointer;
             text-align: center;
@@ -21,6 +30,10 @@
             border: 3px solid #ffea0e;
             border-radius: 8px;
             transition: transform 0.2s, background 0.2s;
+            font-size: 32px;
+        }
+        .product-card p {
+            margin-bottom: 0px;
         }
         .product-card:hover {
             transform: scale(1.05);
@@ -28,15 +41,18 @@
         }
         .product-card img {
             width: 100%;
-            height: 150px;
+            height: 190px;
             object-fit: cover;
             border-radius: 5px;
+        }
+        .product-card h5 {
+            font-size: 42px;
         }
         .cart-container {
             position: fixed;
             top: 0;
             right: 0;
-            width: 300px;
+            width: 400px;
             height: 100vh;
             background: #282828;
             color: #ffffff;
@@ -46,6 +62,9 @@
             display: flex;
             flex-direction: column;
         }
+        .cart-container h5 {
+            font-size: 48px;
+        }
         .cart-buttons {
             margin-top: auto;
             display: flex;
@@ -53,13 +72,27 @@
         }
         .list-group-item {
             background: #444;
-            color: #ffffff;
+            color: #fff;
             border: 1px solid #555;
+            font-size: 24px;
+            padding-left: 8px;
+        }
+        .money-color {
+            color: #7df76d;
         }
         .finish-button {
             border: none;
-            font-size: 42px;
+            font-size: 64px;
             padding: 20px;
+            height: 142px;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .pulse {
+            animation: pulse 1s infinite;
         }
         .scan-button {
             background: #828282;
@@ -67,8 +100,9 @@
         }
         .checkout-button {
             background: #ffea0e;
-            font-size: 48px;
+            font-size: 64px;
             color: #000;
+            height: 142px;
         }
         .checkout-button:hover {
             background: #e6d60d;
@@ -81,20 +115,31 @@
         .notification {
             display: none;
             position: fixed;
-            top: 20px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translate(-50%, -50%);
             background: #ffea0e;
             color: #000;
-            padding: 20px 40px;
-            font-size: 32px;
+            padding: 80px 160px;
+            font-size: 128px;
             font-weight: bold;
-            border-radius: 8px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.4);
+            text-align: center;
         }
         .hidden-input {
             position: absolute;
             left: -9999px;
+        }
+        .delete-item {
+            background: #ff4d4d;
+            border: none;
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -102,21 +147,17 @@
     <!-- Hidden text input -->
     <input type="text" id="hidden-input" class="hidden-input" autocomplete="off">
 
-    <!-- Resuable notification popup -->
-    <div id="checkout-notification" class="notification"></div>
-
     <!-- Products -->
-    <div class="container py-4">
-        <h2 class="text-center mb-4">BaronPay</h2>
-        <div class="row" id="product-list">
+    <div class="container py-4 main-content ">
+        <div class="row product-list" id="product-list">
             {% for product in product_list %}
             <div class="col-md-4 mb-3">
-                <div class="card product-card p-3" data-product-id="{{ product.id }}">
+                <div class="card product-card p-2" data-product-id="{{ product.id }}">
                     {% with 'kiosk/'|add:product.thumbnail_file as product_thumbnail_path %}
                     <img src="{% static product_thumbnail_path %}">
                     {% endwith %}
                     <h5>{{ product.name }}</h5>
-                    <p>${{ product.price }}</p>
+                    <p class="money-color">${{ product.price }}</p>
                 </div>
             </div>
             {% endfor %}
@@ -125,18 +166,21 @@
 
     <!-- Cart -->
     <div class="cart-container">
-        <h4>Cart Summary</h4>
         <ul class="list-group mb-3" id="cart-list">
             <!-- Cart items will appear here -->
         </ul>
+        <br>
         <h5>Total: $<span id="total-price">0.00</span></h5>
         <div class="checkout-container">
-            <button class="btn finish-button scan-button w-100" id="finish-btn">Scan Card</button>
+            <button class="btn finish-button scan-button w-100 pulse" id="finish-btn">Scan Card</button>
         </div>
         <div class="cart-buttons">
             <button class="btn btn-danger w-100" id="cancel-btn">Cancel</button>
         </div>
     </div>
+
+    <!-- Resuable notification popup -->
+    <div id="checkout-notification" class="notification"></div>
 
     <script>
         // Create an empty cart
@@ -170,16 +214,21 @@
             if (current_cart.card_number === "") {
                 $("#finish-btn").removeClass("checkout-button")
                 $("#finish-btn").addClass("finish-button")
+                $("#finish-btn").addClass("pulse")
                 $("#finish-btn").html("Scan Card")
             } else {
                 $("#finish-btn").addClass("checkout-button")
+                $("#finish-btn").removeClass("pulse")
                 $("#finish-btn").removeClass("finish-button")
                 $("#finish-btn").html("Checkout")
             }
 
             // Show items in the cart
             current_cart.cart_items.forEach(item => {
-                cart_list += `<li class="list-group-item">${item.name} - $${item.price}</li>`;
+                cart_list += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><span class="money-color">$${item.price}</span> - ${item.name}</span>
+                                <button class="delete-item" data-cart-item-id="${item.id}" >X</button>
+                              </li>`;
             });
             $("#cart-list").html(cart_list);
             
@@ -189,7 +238,7 @@
         
         function showNotification(notification_text) {
             $("#checkout-notification").html(notification_text);
-            $("#checkout-notification").fadeIn(500).delay(3000).fadeOut(500);
+            $("#checkout-notification").fadeIn(350).delay(2000).fadeOut(350);
         }
 
         $(document).ready(function() {
@@ -204,6 +253,24 @@
                     dataType: "json",
                     headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": getCookie("csrftoken") },
                     data: JSON.stringify({ 'cart_id': current_cart.id, 'product_id': $(this).data("product-id") }),
+                    success: (data) => {
+                        current_cart = data;
+                        updateCart(current_cart)
+                    },
+                    error: (error) => {
+                        console.log(error);
+                    }
+                });
+            });
+
+            // Remove item from cart
+            $("#cart-list").on("click", ".delete-item", function() {
+                $.ajax({
+                    url: "remove_from_cart",
+                    type: "POST",
+                    dataType: "json",
+                    headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": getCookie("csrftoken") },
+                    data: JSON.stringify({ 'cart_id': current_cart.id, 'cart_item_id': $(this).data("cart-item-id") }),
                     success: (data) => {
                         current_cart = data;
                         updateCart(current_cart)
@@ -252,7 +319,7 @@
                     data: JSON.stringify({ 'cart_id': current_cart.id, 'completion_status': 'complete' }),
                     success: (data) => {
                         return_status = data;
-                        showNotification("Checkout Successful!");
+                        showNotification("Complete!");
                     },
                     error: (error) => {
                         console.log(error);
@@ -298,6 +365,7 @@
                     $(this).val(""); // Clear the input field after logging
                 }, 200);
             });
+
         });
     </script>
 {% csrf_token %}
