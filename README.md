@@ -2,7 +2,7 @@
 
 A simple self service point of sale kiosk webapp, using python Django as its backend.
 
-![Example](https://github.com/lonk42/BaronPay/blobl/baronpay_example.png?raw=true)
+![Example](baronpay_example.png)
 
 ## Card Scanning
 
