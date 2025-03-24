@@ -4,11 +4,12 @@ class Product(models.Model):
     name = models.CharField(max_length=100)
     price = models.DecimalField(max_digits=5, decimal_places=2, default=0.4)
     enabled = models.BooleanField(default=True)
-    notes = models.CharField(max_length=1024, default="")
+    notes = models.CharField(max_length=1024, default="", blank=True)
+    discount_text = models.CharField(max_length=100, default="")
     thumbnail_file = models.CharField(max_length=2048)
 
     def __str__(self):
-        return ("id: %s, price: %s, enabled: %s, thumbnail_file: %s, notes: %s") % (self.id, self.price, self.enabled, self.thumbnail_file, self.notes)
+        return ("id: %s, price: %s, enabled: %s, thumbnail_file: %s, notes: %s, discount_text; %s") % (self.id, self.price, self.enabled, self.thumbnail_file, self.notes, self.discount_text)
 
 class Card(models.Model):
     card_number = models.CharField(max_length=12)

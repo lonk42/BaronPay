@@ -57,7 +57,7 @@ def get_cart_content(cart_id):
     # Send back a web consumable objects
     return {
         'id': cart.id,
-        'cart_items': [{'id': cart_item.id, 'name': cart_item.product_id.name,'price': cart_item.product_id.price} for cart_item in cart_items],
+        'cart_items': [{'id': cart_item.id, 'name': cart_item.product_id.name,'price': cart_item.product_id.price, 'discount_text': cart_item.product_id.discount_text} for cart_item in cart_items],
         'total_price': sum([cart_item.product_id.price for cart_item in cart_items]),
         'card_number': card_number
     }
