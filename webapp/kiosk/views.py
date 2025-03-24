@@ -5,7 +5,7 @@ import json
 from .models import Product, Cart, CartItem, Card
 
 def index(request):
-    product_list = Product.objects.all()
+    product_list = Product.objects.filter(enabled=True)
     context = {'product_list': product_list}
     return render(request, 'kiosk/index.html', context)
 
@@ -79,6 +79,10 @@ def card_scanned(request):
         if card is None:
             card = Card(card_number=request_data['card_number'])
             card.save()
+
+        # Update the scanned field for this card
+        card.last_scanned = timezone.now()
+        card.save()
 
         # Add this card to the cart
         cart.card_id = card

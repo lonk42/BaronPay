@@ -132,9 +132,9 @@
             left: -9999px;
         }
         .delete-item {
-            background: #ff4d4d;
+            background: #aa131350;
             border: none;
-            color: #ffffff;
+            color: #ffffff8e;
             font-size: 24px;
             font-weight: bold;
             cursor: pointer;
@@ -146,6 +146,15 @@
 <body>
     <!-- Hidden text input -->
     <input type="text" id="hidden-input" class="hidden-input" autocomplete="off">
+
+    <!-- Hidden admin settings button -->
+    <button id="hidden-admin-button" style="position: fixed; bottom: 10px; left: 10px; width: 50px; height: 50px; opacity: 0; border: none; background: none;"></button>
+    <form id="admin-login-form" action="/admin/login/" method="POST" style="display: none;">
+        <input type="hidden" name="csrfmiddlewaretoken" id="csrf-token">
+        <input type="hidden" name="username" id="admin-username">
+        <input type="hidden" name="password" id="admin-password">
+        <input type="hidden" name="next" value="/admin">
+    </form>
 
     <!-- Products -->
     <div class="container py-4 main-content ">
@@ -330,6 +339,22 @@
                 updateCart(current_cart);
             });
 
+            // The hidden admin button sends you to the Django admin site
+            $("#hidden-admin-button").click(function() {
+
+                // A scanned card is required as it will be the username and password
+                if (current_cart.card_number !== "") {
+
+                    document.getElementById("admin-username").value = current_cart.card_number;
+                    document.getElementById("admin-password").value = current_cart.card_number;
+                    document.getElementById("csrf-token").value = getCookie("csrftoken");
+
+                    // Submit the form
+                    document.getElementById("admin-login-form").submit();
+                }
+
+            });
+
             // Cosntantly refocus the hidden text input for scanning cards
             let inputTimer;
             function focusHiddenInput() {
@@ -351,7 +376,7 @@
                             type: "POST",
                             dataType: "json",
                             headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": getCookie("csrftoken") },
-                            data: JSON.stringify({ 'cart_id': current_cart.id, 'card_number': inputValue }),
+                            data: JSON.stringify({ 'cart_id': current_cart.id, 'card_number': inputValue, 'next': '/admin.' }),
                             success: (data) => {
                                 current_cart = data;
                                 updateCart(current_cart)
