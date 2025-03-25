@@ -5,7 +5,7 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=5, decimal_places=2, default=0.4)
     enabled = models.BooleanField(default=True)
     notes = models.CharField(max_length=1024, default="", blank=True)
-    discount_text = models.CharField(max_length=100, default="")
+    discount_text = models.CharField(max_length=100, default="", blank=True)
     thumbnail_file = models.CharField(max_length=2048)
 
     def __str__(self):

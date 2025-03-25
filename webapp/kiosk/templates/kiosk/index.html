@@ -28,7 +28,7 @@
     <div class="container py-4 main-content ">
         <div class="row product-list" id="product-list">
             {% for product in product_list %}
-            <div class="col-md-4 mb-3">
+            <div class="col-md-3 mb-3">
                 <div class="card product-card p-2" data-product-id="{{ product.id }}">
                     {% if product.discount_text != "" %}
                     <div class="discount-sticker">{{ product.discount_text }}</div>

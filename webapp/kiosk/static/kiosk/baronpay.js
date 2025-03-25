@@ -60,9 +60,42 @@ function showNotification(notification_text) {
     $("#checkout-notification").fadeIn(350).delay(2000).fadeOut(350);
 }
 
+// Adjust product card font size on load and when resizing
+function adjustH5FontSize() {
+    document.querySelectorAll(".product-card h5").forEach(h5 => {
+        let parentWidth = h5.clientWidth;
+        let fontSize = 38; // Start with the default font size
+        h5.style.fontSize = fontSize + "px";
+        h5.style.whiteSpace = "nowrap"; // Ensure single-line text
+
+        // Create a temporary span to measure text width
+        let span = document.createElement("span");
+        span.style.position = "absolute";
+        span.style.visibility = "hidden";
+        span.style.whiteSpace = "nowrap";
+        span.style.fontSize = fontSize + "px";
+        span.innerText = h5.innerText;
+        document.body.appendChild(span);
+
+        // Reduce font size until text fits within the parent width
+        while (span.offsetWidth > parentWidth && fontSize > 10) {
+            fontSize--;
+            span.style.fontSize = fontSize + "px";
+            h5.style.fontSize = fontSize + "px";
+        }
+
+        document.body.removeChild(span); // Clean up temporary span
+    });
+}
+
+// Adjust font size on load and when resizing
+window.addEventListener("load", adjustH5FontSize);
+window.addEventListener("resize", adjustH5FontSize);
+
 $(document).ready(function() {
     // Initialize
     var current_cart = createEmptyCart();
+
 
     // Add item to cart
     $("#product-list").on("click", ".product-card", function() {
