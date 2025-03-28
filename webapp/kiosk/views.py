@@ -5,7 +5,7 @@ import json
 from .models import Product, Cart, CartItem, Card
 
 def index(request):
-    product_list = Product.objects.filter(enabled=True)
+    product_list = Product.objects.filter(enabled=True).order_by('ordering_priority')
     context = {'product_list': product_list}
     return render(request, 'kiosk/index.html', context)
 
