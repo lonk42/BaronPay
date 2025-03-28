@@ -16,11 +16,14 @@ class CartAdmin(admin.ModelAdmin):
 admin.site.register(Cart, CartAdmin)
 
 class CartItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'cart', 'product', 'price', 'removed', 'datetime_created')
+    list_display = ('id', 'cart', 'product', 'price', 'retained', 'datetime_created')
     def cart(self, obj):
         return obj.cart_id.id
     def product(self, obj):
         return obj.product_id.name
     def price(self, obj):
         return obj.product_id.price
+    def retained(self, obj):
+        return not obj.removed
+    retained.boolean = True
 admin.site.register(CartItem, CartItemAdmin)
