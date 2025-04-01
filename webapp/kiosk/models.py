@@ -12,7 +12,7 @@ def nice_time_format(datetime):
 
 class Product(models.Model):
     name = models.CharField(max_length=100)
-    price = models.DecimalField(max_digits=5, decimal_places=2, default=0.4)
+    price = models.DecimalField(max_digits=5, decimal_places=2, default=0.4, editable=False)
     enabled = models.BooleanField(default=True)
     notes = models.CharField(max_length=1024, default="", blank=True)
     discount_text = models.CharField(max_length=100, default="", blank=True)
@@ -28,37 +28,38 @@ class Product(models.Model):
 class Card(models.Model):
     card_number = models.CharField(max_length=12)
     alias = models.CharField(max_length=64, default='')
-    datetime_created = models.DateTimeField("date created", auto_now_add=True, blank=True)
-    last_scanned = models.DateTimeField("date completed", blank=True, null=True)
+    alias_required = models.BooleanField(default=False, blank=True)
+    datetime_created = models.DateTimeField("Date Created", auto_now_add=True, blank=True)
+    last_scanned = models.DateTimeField("Last Scanned", blank=True, null=True)
 
     def __str__(self):
         alias_text = "" if self.alias == "" else " '%s'" % (self.alias)
         return ("(%s) %s%s, created: %s, last_scanned: %s") % (self.id, self.card_number, alias_text, nice_time_format(self.datetime_created), nice_time_format(self.last_scanned))
 
 class Cart(models.Model):
-    card_id = models.ForeignKey(Card, on_delete=models.CASCADE, blank=True, null=True)
-    datetime_created = models.DateTimeField("date created", auto_now_add=True, blank=True)
-    datetime_completed = models.DateTimeField("date completed", blank=True, null=True)
+    card = models.ForeignKey(Card, on_delete=models.CASCADE, blank=True, null=True)
+    datetime_created = models.DateTimeField("Date Created", auto_now_add=True, blank=True)
+    datetime_completed = models.DateTimeField("Date Completed", blank=True, null=True)
     completion_status = models.CharField(max_length=64, default='')
 
     def __str__(self):
 
         completed_text = "Completed " if self.completion_status == "complete" else "[%s] " % (self.completion_status)
 
-        # The cart_id can be None, need to lint this
-        card_number = "[No Card]" if self.card_id is None else self.card_id.card_number
+        # The cart can be None, need to lint this
+        card_number = "[No Card]" if self.card is None else self.card.card_number
 
         # Get a list of items assocaited with this cart
-        cart_items = [item.product_id.name for item in list(CartItem.objects.filter(cart_id=self, removed=False))]
+        cart_items = [item.product.name for item in list(CartItem.objects.filter(cart=self, removed=False))]
         
         return ("(%s) %s, created: %s, %s%s, status: %s, Items: %s") % (self.id, card_number, completed_text, nice_time_format(self.datetime_completed), nice_time_format(self.datetime_created), self.completion_status, cart_items)
 
 class CartItem(models.Model):
-    cart_id = models.ForeignKey(Cart, on_delete=models.CASCADE)
-    product_id = models.ForeignKey(Product, on_delete=models.CASCADE)
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
     removed = models.BooleanField(default=False)
     datetime_created = models.DateTimeField("date created", auto_now_add=True, blank=True)
 
     def __str__(self):
         removed_text = "" if not self.removed else ", [REMOVED]"
-        return ("(%s)%s, added: %s%s") % (self.id, self.product_id.name, nice_time_format(self.datetime_created), removed_text)
+        return ("(%s)%s, added: %s%s") % (self.id, self.product.name, nice_time_format(self.datetime_created), removed_text)

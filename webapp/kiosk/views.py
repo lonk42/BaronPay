@@ -24,7 +24,7 @@ def add_to_cart(request):
         # Create a cartitem with the product selected
         added_product = Product.objects.get(pk=request_data['product_id'])
         added_product.save()
-        cart_item = CartItem(cart_id=cart, product_id=added_product)
+        cart_item = CartItem(cart=cart, product=added_product)
         cart_item.save()
 
         return JsonResponse(get_cart_content(cart.id))
@@ -44,21 +44,21 @@ def remove_from_cart(request):
 
         return JsonResponse(get_cart_content(cart.id))
 
-def get_cart_content(cart_id):
+def get_cart_content(cart):
 
     # Get the cart in question along with the card number and all items in it
-    cart = Cart.objects.get(pk=cart_id)
-    cart_items = list(CartItem.objects.filter(cart_id=cart, removed=False))
-    if cart.card_id is None:
+    cart = Cart.objects.get(pk=cart)
+    cart_items = list(CartItem.objects.filter(cart=cart, removed=False))
+    if cart.card is None:
         card_number = ''
     else:
-        card_number = cart.card_id.card_number
+        card_number = cart.card.card_number
 
     # Send back a web consumable objects
     return {
         'id': cart.id,
-        'cart_items': [{'id': cart_item.id, 'name': cart_item.product_id.name,'price': cart_item.product_id.price, 'discount_text': cart_item.product_id.discount_text} for cart_item in cart_items],
-        'total_price': sum([cart_item.product_id.price for cart_item in cart_items]),
+        'cart_items': [{'id': cart_item.id, 'name': cart_item.product.name,'price': cart_item.product.price, 'discount_text': cart_item.product.discount_text} for cart_item in cart_items],
+        'total_price': sum([cart_item.product.price for cart_item in cart_items]),
         'card_number': card_number
     }
 
@@ -85,7 +85,7 @@ def card_scanned(request):
         card.save()
 
         # Add this card to the cart
-        cart.card_id = card
+        cart.card = card
         cart.save()
 
         return JsonResponse(get_cart_content(cart.id))
