@@ -16,7 +16,7 @@ class CartAdmin(admin.ModelAdmin):
     def items(self, obj):
         return [item.product.name for item in list(CartItem.objects.filter(cart=obj, removed=False))]
     def total(self, obj):
-        return "$%s" % (sum([cart_item.product.price for cart_item in list(CartItem.objects.filter(cart=obj, removed=False))]))
+        return "$%s" % (sum([cart_item.price for cart_item in list(CartItem.objects.filter(cart=obj, removed=False))]))
     def sold(self, obj):
         if obj.completion_status == 'complete':
             return True
@@ -37,8 +37,6 @@ class CartItemAdmin(admin.ModelAdmin):
     def product_name(self, obj):
         link = reverse("admin:kiosk_product_change", args=[obj.product.id])
         return format_html('<a href="{}">{}</a>', link, obj.product.name)
-    def price(self, obj):
-        return obj.product.price
     def retained(self, obj):
         return not obj.removed
     retained.boolean = True

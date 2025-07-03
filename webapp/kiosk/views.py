@@ -24,7 +24,7 @@ def add_to_cart(request):
         # Create a cartitem with the product selected
         added_product = Product.objects.get(pk=request_data['product_id'])
         added_product.save()
-        cart_item = CartItem(cart=cart, product=added_product)
+        cart_item = CartItem(cart=cart, product=added_product, price=added_product.price)
         cart_item.save()
 
         return JsonResponse(get_cart_content(cart.id))
@@ -57,8 +57,8 @@ def get_cart_content(cart):
     # Send back a web consumable objects
     return {
         'id': cart.id,
-        'cart_items': [{'id': cart_item.id, 'name': cart_item.product.name,'price': cart_item.product.price, 'discount_text': cart_item.product.discount_text} for cart_item in cart_items],
-        'total_price': sum([cart_item.product.price for cart_item in cart_items]),
+        'cart_items': [{'id': cart_item.id, 'name': cart_item.product.name,'price': cart_item.price, 'discount_text': cart_item.product.discount_text} for cart_item in cart_items],
+        'total_price': sum([cart_item.price for cart_item in cart_items]),
         'card_number': card_number
     }
 

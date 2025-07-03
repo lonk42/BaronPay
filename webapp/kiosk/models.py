@@ -12,7 +12,7 @@ def nice_time_format(datetime):
 
 class Product(models.Model):
     name = models.CharField(max_length=100)
-    price = models.DecimalField(max_digits=5, decimal_places=2, default=0.4, editable=False)
+    price = models.DecimalField(max_digits=5, decimal_places=2, default=0.4)
     enabled = models.BooleanField(default=True)
     notes = models.CharField(max_length=1024, default="", blank=True)
     discount_text = models.CharField(max_length=100, default="", blank=True)
@@ -58,6 +58,7 @@ class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     removed = models.BooleanField(default=False)
+    price = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     datetime_created = models.DateTimeField("date created", auto_now_add=True, blank=True)
 
     def __str__(self):
