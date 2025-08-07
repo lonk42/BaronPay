@@ -26,7 +26,7 @@ class Product(models.Model):
         return ("%s%s, $%s, thumbnail: %s, order: %d%s%s") % (enabled_text, self.name, self.price, self.thumbnail_file, self.ordering_priority, notes, discount_text)
 
 class Card(models.Model):
-    card_number = models.CharField(max_length=12)
+    card_number = models.CharField(max_length=20)
     alias = models.CharField(max_length=64, default='')
     alias_required = models.BooleanField(default=False, blank=True)
     datetime_created = models.DateTimeField("Date Created", auto_now_add=True, blank=True)

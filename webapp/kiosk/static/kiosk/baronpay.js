@@ -206,12 +206,12 @@ $(document).ready(function() {
     setInterval(focusHiddenInput, 500);
     focusHiddenInput();
 
-    // Set the cart's card number if we get 10 or 14 digits
+    // Set the cart's card number if we get 8 or 14 characters
     $("#hidden-input").on("input", function() {
         clearTimeout(inputTimer);
         inputTimer = setTimeout(() => {
             let inputValue = $(this).val();
-            if (inputValue.length === 10 || inputValue.length === 14) {
+            if (inputValue.length === 8 || inputValue.length === 14) {
         
                 // Let the API know we got a valid card number
                 $.ajax({
