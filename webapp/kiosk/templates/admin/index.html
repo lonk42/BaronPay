@@ -1,0 +1,26 @@
+{% extends "admin/index.html" %}
+{% load i18n static %}
+
+{% block content %}
+{{ block.super }}
+
+{% if show_daily_sales_link %}
+<div class="module" style="margin-top: 20px;">
+    <table style="width: 100%;">
+        <caption>
+            <a href="{% url 'admin:daily_sales' %}" class="section" style="display: block; padding: 10px;">
+                Reports
+            </a>
+        </caption>
+        <tbody>
+            <tr class="model-product">
+                <th scope="row">
+                    <a href="{% url 'admin:daily_sales' %}" style="font-size: 14px;">Daily Sales Summary</a>
+                </th>
+                <td>View sales by day with product details and totals</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}
