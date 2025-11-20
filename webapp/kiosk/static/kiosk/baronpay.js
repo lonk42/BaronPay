@@ -1,3 +1,119 @@
+// Audio Manager for sound effects
+const AudioManager = {
+    audioContext: null,
+
+    init: function() {
+        // Create audio context on first user interaction
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    },
+
+    // Two-beat lower pitch sound for adding items
+    playAddSound: function() {
+        this.init();
+
+        // First beat
+        const osc1 = this.audioContext.createOscillator();
+        const gain1 = this.audioContext.createGain();
+        osc1.connect(gain1);
+        gain1.connect(this.audioContext.destination);
+        osc1.frequency.value = 400;
+        osc1.type = 'sine';
+        gain1.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.08);
+        osc1.start(this.audioContext.currentTime);
+        osc1.stop(this.audioContext.currentTime + 0.08);
+
+        // Second beat (higher pitch)
+        const osc2 = this.audioContext.createOscillator();
+        const gain2 = this.audioContext.createGain();
+        osc2.connect(gain2);
+        gain2.connect(this.audioContext.destination);
+        osc2.frequency.value = 500;
+        osc2.type = 'sine';
+        const startTime2 = this.audioContext.currentTime + 0.1;
+        gain2.gain.setValueAtTime(0.3, startTime2);
+        gain2.gain.exponentialRampToValueAtTime(0.01, startTime2 + 0.08);
+        osc2.start(startTime2);
+        osc2.stop(startTime2 + 0.08);
+    },
+
+    // Lower pitch beep for removing items
+    playRemoveSound: function() {
+        this.init();
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+
+        oscillator.frequency.value = 400;
+        oscillator.type = 'sine';
+
+        gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.15);
+
+        oscillator.start(this.audioContext.currentTime);
+        oscillator.stop(this.audioContext.currentTime + 0.15);
+    },
+
+    // Pleasant ascending tone for card scan
+    playCardScanSound: function() {
+        this.init();
+        const times = [0, 0.08, 0.16];
+        const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5 chord
+
+        times.forEach((time, index) => {
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+
+            oscillator.frequency.value = frequencies[index];
+            oscillator.type = 'sine';
+
+            const startTime = this.audioContext.currentTime + time;
+            gainNode.gain.setValueAtTime(0.25, startTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
+
+            oscillator.start(startTime);
+            oscillator.stop(startTime + 0.3);
+        });
+    },
+
+    // Cheerful jingle for checkout complete
+    playCheckoutSound: function() {
+        this.init();
+        // Play a happy melody: C5, E5, G5, C6
+        const melody = [
+            { freq: 523.25, time: 0, duration: 0.15 },    // C5
+            { freq: 659.25, time: 0.15, duration: 0.15 },  // E5
+            { freq: 783.99, time: 0.3, duration: 0.15 },   // G5
+            { freq: 1046.50, time: 0.45, duration: 0.4 }   // C6
+        ];
+
+        melody.forEach(note => {
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+
+            oscillator.frequency.value = note.freq;
+            oscillator.type = 'triangle';
+
+            const startTime = this.audioContext.currentTime + note.time;
+            gainNode.gain.setValueAtTime(0.3, startTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + note.duration);
+
+            oscillator.start(startTime);
+            oscillator.stop(startTime + note.duration);
+        });
+    }
+};
+
 // Create an empty cart
 function createEmptyCart() {
     return{'id': -1, 'cart_items': [], 'total_price': "0.00", 'card_number': ''}
@@ -107,7 +223,8 @@ $(document).ready(function() {
             data: JSON.stringify({ 'cart_id': current_cart.id, 'product_id': $(this).data("product-id") }),
             success: (data) => {
                 current_cart = data;
-                updateCart(current_cart)
+                updateCart(current_cart);
+                AudioManager.playAddSound();
             },
             error: (error) => {
                 console.log(error);
@@ -125,7 +242,8 @@ $(document).ready(function() {
             data: JSON.stringify({ 'cart_id': current_cart.id, 'cart_item_id': $(this).data("cart-item-id") }),
             success: (data) => {
                 current_cart = data;
-                updateCart(current_cart)
+                updateCart(current_cart);
+                AudioManager.playRemoveSound();
             },
             error: (error) => {
                 console.log(error);
@@ -172,12 +290,13 @@ $(document).ready(function() {
             success: (data) => {
                 return_status = data;
                 showNotification("Complete!");
+                AudioManager.playCheckoutSound();
             },
             error: (error) => {
                 console.log(error);
             }
         });
-        
+
         current_cart = createEmptyCart();
         updateCart(current_cart);
     });
@@ -222,7 +341,8 @@ $(document).ready(function() {
                     data: JSON.stringify({ 'cart_id': current_cart.id, 'card_number': inputValue, 'next': '/admin.' }),
                     success: (data) => {
                         current_cart = data;
-                        updateCart(current_cart)
+                        updateCart(current_cart);
+                        AudioManager.playCardScanSound();
                     },
                     error: (error) => {
                         console.log(error);
