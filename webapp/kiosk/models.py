@@ -36,6 +36,26 @@ class Card(models.Model):
         alias_text = "" if self.alias == "" else " '%s'" % (self.alias)
         return ("(%s) %s%s, created: %s, last_scanned: %s") % (self.id, self.card_number, alias_text, nice_time_format(self.datetime_created), nice_time_format(self.last_scanned))
 
+class KioskSettings(models.Model):
+    prompt_question = models.CharField(max_length=256, default='Please enter your name')
+    prompt_new_cards = models.BooleanField(default=False, blank=True)
+
+    class Meta:
+        verbose_name = "Kiosk Settings"
+        verbose_name_plural = "Kiosk Settings"
+
+    def __str__(self):
+        return "Kiosk Settings"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
 class Cart(models.Model):
     card = models.ForeignKey(Card, on_delete=models.CASCADE, blank=True, null=True)
     datetime_created = models.DateTimeField("Date Created", auto_now_add=True, blank=True)

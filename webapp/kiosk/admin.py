@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.db.models import Sum, Count
 from collections import defaultdict
 from datetime import datetime
-from .models import Product, Card, Cart, CartItem
+from .models import Product, Card, Cart, CartItem, KioskSettings
 
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'price', 'enabled', 'notes', 'discount_text', 'thumbnail_file', 'ordering_priority')
@@ -13,7 +13,12 @@ admin.site.register(Product, ProductAdmin)
 
 class CardAdmin(admin.ModelAdmin):
     list_display = ('id', 'card_number', 'alias', 'alias_required', 'datetime_created', 'last_scanned')
+    list_editable = ('alias_required',)
 admin.site.register(Card, CardAdmin)
+
+class KioskSettingsAdmin(admin.ModelAdmin):
+    list_display = ('prompt_question', 'prompt_new_cards')
+admin.site.register(KioskSettings, KioskSettingsAdmin)
 
 class CartAdmin(admin.ModelAdmin):
     list_display = ('id', 'card_number', 'datetime_created', 'datetime_completed', 'sold', 'completion_status', 'total', 'items')
@@ -122,3 +127,4 @@ admin_site.register(Product, ProductAdmin)
 admin_site.register(Card, CardAdmin)
 admin_site.register(Cart, CartAdmin)
 admin_site.register(CartItem, CartItemAdmin)
+admin_site.register(KioskSettings, KioskSettingsAdmin)

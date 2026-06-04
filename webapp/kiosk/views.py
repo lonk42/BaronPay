@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.utils import timezone
 import json
-from .models import Product, Cart, CartItem, Card
+from .models import Product, Cart, CartItem, Card, KioskSettings
 
 def index(request):
     product_list = Product.objects.filter(enabled=True).order_by('ordering_priority')
@@ -78,6 +78,8 @@ def card_scanned(request):
         card = Card.objects.filter(card_number=request_data['card_number']).first()
         if card is None:
             card = Card(card_number=request_data['card_number'])
+            if KioskSettings.load().prompt_new_cards:
+                card.alias_required = True
             card.save()
 
         # Update the scanned field for this card
@@ -88,7 +90,25 @@ def card_scanned(request):
         cart.card = card
         cart.save()
 
-        return JsonResponse(get_cart_content(cart.id))
+        response = get_cart_content(cart.id)
+        if card.alias_required:
+            settings = KioskSettings.load()
+            response['prompt_required'] = True
+            response['prompt_question'] = settings.prompt_question
+            response['card_id'] = card.id
+        return JsonResponse(response)
+
+def submit_card_prompt(request):
+
+    if request.method == 'POST':
+        request_data = json.load(request)
+
+        card = Card.objects.get(pk=request_data['card_id'])
+        card.alias = request_data['answer']
+        card.alias_required = False
+        card.save()
+
+        return JsonResponse({'success': True})
 
 def finish_cart(request):
 

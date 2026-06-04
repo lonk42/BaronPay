@@ -83,34 +83,45 @@ const AudioManager = {
         });
     },
 
-    // Cheerful jingle for checkout complete
+    // Play a single bell-like tone with a soft attack and ringing decay (click-free)
+    playTone: function(freq, time, duration, peak) {
+        const ac = this.audioContext;
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.connect(gain);
+        gain.connect(ac.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+
+        const startTime = ac.currentTime + time;
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.exponentialRampToValueAtTime(peak, startTime + 0.015);     // quick attack
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration); // ringing release
+
+        osc.start(startTime);
+        osc.stop(startTime + duration + 0.02);
+    },
+
+    // Cheerful jingle for checkout complete — "Call & Answer" chime (~2.5s)
     playCheckoutSound: function() {
         this.init();
-        // Play a happy melody: C5, E5, G5, C6
-        const melody = [
-            { freq: 523.25, time: 0, duration: 0.15 },    // C5
-            { freq: 659.25, time: 0.15, duration: 0.15 },  // E5
-            { freq: 783.99, time: 0.3, duration: 0.15 },   // G5
-            { freq: 1046.50, time: 0.45, duration: 0.4 }   // C6
-        ];
 
-        melody.forEach(note => {
-            const oscillator = this.audioContext.createOscillator();
-            const gainNode = this.audioContext.createGain();
+        // Note frequencies
+        const C5 = 523.25, E5 = 659.25, G5 = 783.99, A5 = 880.00, C6 = 1046.50, E6 = 1318.51;
 
-            oscillator.connect(gainNode);
-            gainNode.connect(this.audioContext.destination);
+        // Phrase 1 — rising question
+        this.playTone(G5, 0.00, 0.60, 0.25);
+        this.playTone(C6, 0.30, 0.60, 0.25);
+        this.playTone(E6, 0.60, 0.65, 0.25);
+        // Phrase 2 — answer resolving home
+        this.playTone(A5, 1.05, 0.60, 0.25);
+        this.playTone(G5, 1.35, 0.60, 0.25);
+        this.playTone(C6, 1.65, 0.70, 0.25);
 
-            oscillator.frequency.value = note.freq;
-            oscillator.type = 'triangle';
-
-            const startTime = this.audioContext.currentTime + note.time;
-            gainNode.gain.setValueAtTime(0.3, startTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + note.duration);
-
-            oscillator.start(startTime);
-            oscillator.stop(startTime + note.duration);
-        });
+        // Soft sustained pad underneath
+        [C5, G5].forEach(f => this.playTone(f, 0.05, 1.00, 0.08));
+        // Final ringing chime chord
+        [C5, E5, G5, C6].forEach(f => this.playTone(f, 1.92, 0.60, 0.15));
     }
 };
 
@@ -319,8 +330,11 @@ $(document).ready(function() {
 
     // Cosntantly refocus the hidden text input for scanning cards
     let inputTimer;
+    var promptModalOpen = false;
     function focusHiddenInput() {
-        $("#hidden-input").focus();
+        if (!promptModalOpen) {
+            $("#hidden-input").focus();
+        }
     }
     setInterval(focusHiddenInput, 500);
     focusHiddenInput();
@@ -343,6 +357,9 @@ $(document).ready(function() {
                         current_cart = data;
                         updateCart(current_cart);
                         AudioManager.playCardScanSound();
+                        if (data.prompt_required) {
+                            showPromptModal(data.prompt_question, data.card_id);
+                        }
                     },
                     error: (error) => {
                         console.log(error);
@@ -352,6 +369,59 @@ $(document).ready(function() {
             }
             $(this).val(""); // Clear the input field after logging
         }, 200);
+    });
+
+    // Prompt modal functions
+    function showPromptModal(question, cardId) {
+        promptModalOpen = true;
+        $("#prompt-question-text").text(question);
+        $("#prompt-answer").val("");
+        $("#prompt-modal").data("card-id", cardId);
+        $("#prompt-modal").fadeIn(200);
+    }
+
+    function closePromptModal() {
+        $("#prompt-modal").fadeOut(200);
+        promptModalOpen = false;
+        focusHiddenInput();
+    }
+
+    // On-screen keyboard input
+    $("#prompt-modal").on("click", ".osk-key", function() {
+        var key = $(this).data("key");
+        var input = $("#prompt-answer");
+        if (key === "backspace") {
+            input.val(input.val().slice(0, -1));
+        } else if (key === "space") {
+            input.val(input.val() + " ");
+        } else {
+            input.val(input.val() + key);
+        }
+    });
+
+    // Submit prompt answer
+    $("#prompt-submit").click(function() {
+        var answer = $("#prompt-answer").val().trim();
+        if (answer === "") return;
+
+        $.ajax({
+            url: "submit_card_prompt",
+            type: "POST",
+            dataType: "json",
+            headers: { "X-Requested-With": "XMLHttpRequest", "X-CSRFToken": getCookie("csrftoken") },
+            data: JSON.stringify({ 'card_id': $("#prompt-modal").data("card-id"), 'answer': answer }),
+            success: (data) => {
+                closePromptModal();
+            },
+            error: (error) => {
+                console.log(error);
+            }
+        });
+    });
+
+    // Skip prompt
+    $("#prompt-skip").click(function() {
+        closePromptModal();
     });
 
 });
